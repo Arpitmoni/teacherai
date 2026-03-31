@@ -26,41 +26,8 @@ teachai/
 
 ---
 
-## Setup (Windows / Linux / Mac)
 
-### 1. Install Python 3.9+
-Download from https://python.org
 
-### 2. Create virtual environment (recommended)
-```bash
-cd teachai
-python -m venv venv
-
-# Windows:
-venv\Scripts\activate
-
-# Linux/Mac:
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 4. (Optional) Install Tesseract OCR for image upload
-- **Windows**: Download from https://github.com/UB-Mannheim/tesseract/wiki
-- **Linux**: `sudo apt install tesseract-ocr`
-- **Mac**: `brew install tesseract`
-
-### 5. Run the app
-```bash
-python app.py
-```
-
-### 6. Open in browser
-```
-http://localhost:5000
 ```
 
 ---
@@ -117,4 +84,4 @@ Speak: `"Rahul 78 Aman 85 Priya 92"`
 
 ---
 
-Built with ❤️ for Indian teachers.
+
