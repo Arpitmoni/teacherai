@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}TeachAI{% endblock %} — AI Teacher Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+      <div class="brand-text">
+        <span class="brand-name">TeachAI</span>
+        <span class="brand-sub">Assistant</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="{{ url_for('dashboard') }}" class="nav-item {% if request.endpoint == 'dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="{{ url_for('marks_page') }}" class="nav-item {% if request.endpoint == 'marks_page' %}active{% endif %}">
+        <i class="fas fa-graduation-cap"></i>
+        <span>Marks Manager</span>
+      </a>
+      <a href="{{ url_for('paper_generator') }}" class="nav-item {% if request.endpoint == 'paper_generator' %}active{% endif %}">
+        <i class="fas fa-file-alt"></i>
+        <span>Paper Generator</span>
+      </a>
+      <a href="{{ url_for('history_page') }}" class="nav-item {% if request.endpoint == 'history_page' %}active{% endif %}">
+        <i class="fas fa-history"></i>
+        <span>History</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-version">v1.0.0 — Production</div>
+    </div>
+  </aside>
+
+  <!-- ── MOBILE OVERLAY ── -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- ── MAIN CONTENT ── -->
+  <main class="main-content">
+    <header class="topbar">
+      <button class="topbar-menu-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="topbar-title">{% block page_title %}Dashboard{% endblock %}</div>
+      <div class="topbar-actions">
+        <div class="topbar-time" id="topbarTime"></div>
+        <div class="topbar-avatar">
+          <i class="fas fa-user-tie"></i>
+        </div>
+      </div>
+    </header>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

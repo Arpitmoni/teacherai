@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Paper Generator{% endblock %}
+{% block page_title %}Paper Generator{% endblock %}
+
+{% block content %}
+<div class="paper-layout">
+
+  <section class="section">
+    <div class="paper-grid">
+
+      <!-- ── INPUT PANEL ── -->
+      <div class="paper-input-panel">
+        <div class="card">
+          <div class="card-header"><i class="fas fa-sliders-h"></i> Paper Settings</div>
+          <div class="card-body">
+            <div class="form-group">
+              <label>School Name</label>
+              <input type="text" id="schoolName" class="form-input" placeholder="e.g. VGM Smart School" value="VGM Smart School" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Subject</label>
+                <select id="paperSubject" class="form-input">
+                  <option>Math</option><option>Science</option><option>English</option>
+                  <option>Hindi</option><option>Social Studies</option><option>Computer</option>
+                  <option>Physics</option><option>Chemistry</option><option>Biology</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Class</label>
+                <select id="paperClass" class="form-input">
+                  {% for c in range(5, 13) %}
+                  <option value="{{ c }}">Class {{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Max Marks</label>
+                <input type="number" id="paperMaxMarks" class="form-input" value="80" />
+              </div>
+              <div class="form-group">
+                <label>Duration</label>
+                <select id="paperDuration" class="form-input">
+                  <option>1 Hour</option><option>1.5 Hours</option>
+                  <option value="2 Hours" selected>2 Hours</option>
+                  <option>3 Hours</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Difficulty Level</label>
+              <div class="difficulty-selector">
+                <button class="diff-btn active" data-val="Easy" onclick="selectDifficulty(this)">🟢 Easy</button>
+                <button class="diff-btn" data-val="Medium" onclick="selectDifficulty(this)">🟡 Medium</button>
+                <button class="diff-btn" data-val="Hard" onclick="selectDifficulty(this)">🔴 Hard</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUESTION INPUT -->
+        <div class="card mt-2">
+          <div class="card-header">
+            <span><i class="fas fa-question-circle"></i> Questions</span>
+            <span class="badge">One per line</span>
+          </div>
+
+          <!-- Sub-tabs -->
+          <div class="mini-tab-bar">
+            <button class="mini-tab active" onclick="switchQTab('manual')"><i class="fas fa-keyboard"></i> Manual</button>
+            <button class="mini-tab" onclick="switchQTab('voice')"><i class="fas fa-microphone"></i> Voice</button>
+            <button class="mini-tab" onclick="switchQTab('ocr')"><i class="fas fa-camera"></i> Image OCR</button>
+            <button class="mini-tab" onclick="switchQTab('ai')"><i class="fas fa-robot"></i> AI Generate</button>
+          </div>
+
+          <div class="card-body">
+            <!-- MANUAL -->
+            <div id="qtab-manual" class="qtab active">
+              <textarea id="questionsText" class="form-input" rows="8"
+                placeholder="Type each question on a new line:
+Q1. Define Newton's Laws of Motion.
+Q2. Explain the process of photosynthesis.
+Q3. Solve: 2x + 5 = 15"></textarea>
+            </div>
+
+            <!-- VOICE -->
+            <div id="qtab-voice" class="qtab hidden">
+              <div class="voice-hint"><i class="fas fa-info-circle"></i> Speak your questions one by one</div>
+              <div class="voice-display">
+                <div class="voice-icon-wrap">
+                  <button class="voice-btn" id="paperVoiceBtn" onclick="togglePaperVoice()">
+                    <i class="fas fa-microphone" id="paperVoiceIcon"></i>
+                  </button>
+                  <div class="voice-rings hidden" id="paperVoiceRings">
+                    <span></span><span></span><span></span>
+                  </div>
+                </div>
+                <p id="paperVoiceStatus">Click mic to record questions</p>
+              </div>
+              <textarea id="voiceQText" class="form-input mt-2" rows="5" placeholder="Voice output will appear here..."></textarea>
+              <button class="btn btn-ghost mt-1" onclick="document.getElementById('questionsText').value = document.getElementById('voiceQText').value; switchQTab('manual'); showToast('Questions copied!','success')">
+                <i class="fas fa-copy"></i> Use These Questions
+              </button>
+            </div>
+
+            <!-- OCR -->
+            <div id="qtab-ocr" class="qtab hidden">
+              <div class="upload-zone">
+                <i class="fas fa-image"></i>
+                <p>Upload question image <label for="ocrQFile" class="upload-link">browse</label></p>
+                <input type="file" id="ocrQFile" accept=".jpg,.jpeg,.png" hidden onchange="previewQOCR(this)" />
+              </div>
+              <div id="ocrQPreview" class="hidden mt-2">
+                <img id="ocrQImg" style="max-width:100%;border-radius:8px;" />
+              </div>
+              <p class="text-muted mt-1 text-sm"><i class="fas fa-info-circle"></i> Tesseract OCR required on server</p>
+            </div>
+
+            <!-- AI GENERATE -->
+            <div id="qtab-ai" class="qtab hidden">
+              <div class="ai-generate-card">
+                <div class="ai-icon"><i class="fas fa-robot"></i></div>
+                <p>TeachAI will automatically generate questions based on the subject, class, and difficulty you selected.</p>
+                <p class="text-muted">No questions needed — leave blank and generate!</p>
+                <div class="ai-badges">
+                  <span class="badge">Subject-specific</span>
+                  <span class="badge">Class-appropriate</span>
+                  <span class="badge">Difficulty-adjusted</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OUTPUT FORMAT -->
+        <div class="card mt-2">
+          <div class="card-header"><i class="fas fa-download"></i> Output Format</div>
+          <div class="card-body">
+            <div class="format-selector">
+              <label class="format-option active" id="fmtDocx" onclick="selectFormat('docx')">
+                <i class="fas fa-file-word"></i>
+                <span>Word (.docx)</span>
+              </label>
+              <label class="format-option" id="fmtPdf" onclick="selectFormat('pdf')">
+                <i class="fas fa-file-pdf"></i>
+                <span>PDF</span>
+              </label>
+            </div>
+            <input type="hidden" id="outputFormat" value="docx" />
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-full mt-2" onclick="generatePaper()">
+          <i class="fas fa-magic"></i> Generate Question Paper
+        </button>
+      </div>
+
+      <!-- ── PREVIEW PANEL ── -->
+      <div class="paper-preview-panel">
+        <div class="card h-full">
+          <div class="card-header">
+            <span><i class="fas fa-eye"></i> Preview</span>
+            <button class="btn btn-ghost btn-sm" onclick="refreshPreview()"><i class="fas fa-sync"></i> Refresh</button>
+          </div>
+          <div class="card-body" id="previewContent">
+            <div class="paper-preview-placeholder">
+              <div class="preview-icon"><i class="fas fa-file-alt"></i></div>
+              <p>Fill in the details and click "Generate" to preview your question paper.</p>
+              <div class="preview-dots">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</div>
+
+<script>
+let selectedDifficulty = 'Easy';
+let selectedFormat = 'docx';
+let paperVoiceRec = null;
+let paperVoiceRecording = false;
+
+function selectDifficulty(btn) {
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedDifficulty = btn.dataset.val;
+  refreshPreview();
+}
+
+function selectFormat(fmt) {
+  selectedFormat = fmt;
+  document.getElementById('outputFormat').value = fmt;
+  document.getElementById('fmtDocx').classList.toggle('active', fmt === 'docx');
+  document.getElementById('fmtPdf').classList.toggle('active', fmt === 'pdf');
+}
+
+function switchQTab(tab) {
+  document.querySelectorAll('.mini-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.qtab').forEach(p => { p.classList.add('hidden'); p.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+  document.getElementById('qtab-' + tab).classList.remove('hidden');
+  document.getElementById('qtab-' + tab).classList.add('active');
+}
+
+function refreshPreview() {
+  const school = document.getElementById('schoolName').value || 'School Name';
+  const subject = document.getElementById('paperSubject').value;
+  const cls = document.getElementById('paperClass').value;
+  const marks = document.getElementById('paperMaxMarks').value || 80;
+  const dur = document.getElementById('paperDuration').value;
+  const questions = document.getElementById('questionsText').value.trim().split('\n').filter(q => q.trim());
+
+  const secA = questions.slice(0, 5);
+  const secB = questions.slice(5, 10);
+  const secC = questions.slice(10);
+
+  document.getElementById('previewContent').innerHTML = `
+    <div class="paper-preview-doc">
+      <div class="pp-header">
+        <h2>${school.toUpperCase()}</h2>
+        <p><strong>Subject:</strong> ${subject} &nbsp;|&nbsp; <strong>Class:</strong> ${cls} &nbsp;|&nbsp; <strong>Date:</strong> ${new Date().toLocaleDateString('en-IN')}</p>
+        <p><strong>Time:</strong> ${dur} &nbsp;|&nbsp; <strong>Max Marks:</strong> ${marks} &nbsp;|&nbsp; <strong>Difficulty:</strong> ${selectedDifficulty}</p>
+        <hr/>
+        <p class="instructions"><em>General Instructions: All questions are compulsory. Write legibly.</em></p>
+        <hr/>
+      </div>
+      ${secA.length ? `<div class="pp-section"><h4>SECTION A – Short Answer (2 marks each)</h4>${secA.map((q,i)=>`<p><strong>Q${i+1}.</strong> ${q} <em>[2 marks]</em></p>`).join('')}</div>` : ''}
+      ${secB.length ? `<div class="pp-section"><h4>SECTION B – Long Answer (5 marks each)</h4>${secB.map((q,i)=>`<p><strong>Q${i+1}.</strong> ${q} <em>[5 marks]</em></p>`).join('')}</div>` : ''}
+      ${secC.length ? `<div class="pp-section"><h4>SECTION C – Optional Questions</h4>${secC.map((q,i)=>`<p><strong>Q${i+1}.</strong> ${q} <em>[8 marks]</em></p>`).join('')}</div>` : ''}
+      ${!questions.length ? '<p class="text-muted text-center"><em>AI will auto-generate questions on the server...</em></p>' : ''}
+    </div>`;
+}
+
+async function generatePaper() {
+  const school = document.getElementById('schoolName').value || 'School Name';
+  const subject = document.getElementById('paperSubject').value;
+  const cls = document.getElementById('paperClass').value;
+  const marks = document.getElementById('paperMaxMarks').value || 80;
+  const dur = document.getElementById('paperDuration').value;
+  const questions = document.getElementById('questionsText').value;
+  const format = selectedFormat;
+
+  showLoader('Generating question paper...');
+
+  try {
+    const res = await fetch('/api/generate-paper', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        school_name: school, subject, class_name: cls,
+        max_marks: parseInt(marks), duration: dur,
+        difficulty: selectedDifficulty, questions: questions, format
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      hideLoader();
+      showToast(err.error || 'Generation failed', 'error');
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `question_paper_${subject}.${format}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    hideLoader();
+    showToast('Question paper downloaded!', 'success');
+  } catch (e) {
+    hideLoader();
+    showToast('Error: ' + e.message, 'error');
+  }
+}
+
+function previewQOCR(input) {
+  if (input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('ocrQImg').src = e.target.result;
+      document.getElementById('ocrQPreview').classList.remove('hidden');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+function togglePaperVoice() {
+  if (paperVoiceRecording) stopPaperVoice(); else startPaperVoice();
+}
+function startPaperVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { showToast('Voice not supported', 'error'); return; }
+  paperVoiceRec = new SR();
+  paperVoiceRec.continuous = true; paperVoiceRec.interimResults = false;
+  paperVoiceRec.onresult = e => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        document.getElementById('voiceQText').value += e.results[i][0].transcript + '\n';
+      }
+    }
+  };
+  paperVoiceRec.start(); paperVoiceRecording = true;
+  document.getElementById('paperVoiceBtn').classList.add('recording');
+  document.getElementById('paperVoiceIcon').className = 'fas fa-stop';
+  document.getElementById('paperVoiceStatus').textContent = 'Recording... Speak questions';
+  document.getElementById('paperVoiceRings').classList.remove('hidden');
+}
+function stopPaperVoice() {
+  if (paperVoiceRec) paperVoiceRec.stop();
+  paperVoiceRecording = false;
+  document.getElementById('paperVoiceBtn').classList.remove('recording');
+  document.getElementById('paperVoiceIcon').className = 'fas fa-microphone';
+  document.getElementById('paperVoiceStatus').textContent = 'Stopped. Review and use.';
+  document.getElementById('paperVoiceRings').classList.add('hidden');
+}
+
+// Auto refresh preview on input
+['schoolName','paperSubject','paperClass','paperMaxMarks','paperDuration','questionsText'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', refreshPreview);
+});
+refreshPreview();
+</script>
+{% endblock %}

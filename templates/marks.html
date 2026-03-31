@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+{% block title %}Marks Manager{% endblock %}
+{% block page_title %}Marks Manager{% endblock %}
+
+{% block content %}
+<div class="marks-layout">
+
+  <!-- ── INPUT TABS ── -->
+  <section class="section">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('excel')"><i class="fas fa-file-excel"></i> Excel Upload</button>
+      <button class="tab-btn" onclick="switchTab('voice')"><i class="fas fa-microphone"></i> Voice Input</button>
+      <button class="tab-btn" onclick="switchTab('ocr')"><i class="fas fa-camera"></i> Image / OCR</button>
+      <button class="tab-btn" onclick="switchTab('manual')"><i class="fas fa-keyboard"></i> Manual Entry</button>
+      <button class="tab-btn" onclick="switchTab('students')"><i class="fas fa-users"></i> Students</button>
+    </div>
+
+    <!-- EXCEL TAB -->
+    <div class="tab-panel active" id="tab-excel">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-upload"></i> Upload Student List (Excel)</div>
+        <div class="card-body">
+          <div class="upload-zone" id="studentUploadZone" ondrop="handleDrop(event,'studentFile')" ondragover="event.preventDefault()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Drag & drop Excel file or <label for="studentFile" class="upload-link">browse</label></p>
+            <small>Columns needed: Name, Roll Number, Class</small>
+            <input type="file" id="studentFile" accept=".xlsx,.xls" onchange="previewFile(this,'studentFileName')" hidden />
+          </div>
+          <div id="studentFileName" class="file-preview hidden"></div>
+          <button class="btn btn-primary mt-2" onclick="uploadStudents()">
+            <i class="fas fa-upload"></i> Import Students
+          </button>
+        </div>
+      </div>
+      <div class="card mt-2">
+        <div class="card-header"><i class="fas fa-star"></i> Upload Marks (Excel)</div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Subject</label>
+              <input type="text" id="marksSubject" class="form-input" placeholder="e.g. Mathematics" />
+            </div>
+            <div class="form-group">
+              <label>Exam Type</label>
+              <select id="marksExamType" class="form-input">
+                <option>Unit Test</option><option>Half Yearly</option>
+                <option>Annual</option><option>Practice Test</option>
+              </select>
+            </div>
+          </div>
+          <div class="upload-zone" id="marksUploadZone" ondrop="handleDrop(event,'marksFile')" ondragover="event.preventDefault()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Drag & drop marks Excel or <label for="marksFile" class="upload-link">browse</label></p>
+            <small>Columns needed: Name, Marks</small>
+            <input type="file" id="marksFile" accept=".xlsx,.xls" onchange="previewFile(this,'marksFileName')" hidden />
+          </div>
+          <div id="marksFileName" class="file-preview hidden"></div>
+          <button class="btn btn-primary mt-2" onclick="uploadMarks()">
+            <i class="fas fa-star"></i> Upload Marks
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VOICE TAB -->
+    <div class="tab-panel hidden" id="tab-voice">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-microphone"></i> Voice Marks Entry</div>
+        <div class="card-body">
+          <div class="voice-hint">
+            <i class="fas fa-info-circle"></i>
+            Speak format: <code>"Rahul 78 Aman 85 Priya 92"</code>
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <input type="text" id="voiceSubject" class="form-input" placeholder="e.g. Science" />
+          </div>
+          <div class="voice-display" id="voiceDisplay">
+            <div class="voice-icon-wrap" id="voiceIconWrap">
+              <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">
+                <i class="fas fa-microphone" id="voiceBtnIcon"></i>
+              </button>
+              <div class="voice-rings hidden" id="voiceRings">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <p id="voiceStatus">Click mic to start recording</p>
+          </div>
+          <textarea id="voiceText" class="form-input mt-2" rows="3" placeholder="Voice text will appear here (you can also type manually)..."></textarea>
+          <button class="btn btn-primary mt-2" onclick="submitVoiceMarks()">
+            <i class="fas fa-check"></i> Save Marks from Voice
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OCR TAB -->
+    <div class="tab-panel hidden" id="tab-ocr">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-camera"></i> Upload Image (OCR)</div>
+        <div class="card-body">
+          <div class="voice-hint">
+            <i class="fas fa-info-circle"></i>
+            Upload a photo of marksheet. TeachAI will extract names & marks automatically.
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <input type="text" id="ocrSubject" class="form-input" placeholder="e.g. Hindi" />
+          </div>
+          <div class="upload-zone" id="ocrUploadZone">
+            <i class="fas fa-image"></i>
+            <p>Upload marksheet image <label for="ocrFile" class="upload-link">browse</label></p>
+            <small>Supports: JPG, PNG</small>
+            <input type="file" id="ocrFile" accept=".jpg,.jpeg,.png" onchange="previewOCRImage(this)" hidden />
+          </div>
+          <div id="ocrPreview" class="hidden mt-2">
+            <img id="ocrPreviewImg" style="max-width:100%;border-radius:8px;" />
+          </div>
+          <button class="btn btn-primary mt-2" onclick="uploadOCR()">
+            <i class="fas fa-magic"></i> Extract & Save Marks
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANUAL TAB -->
+    <div class="tab-panel hidden" id="tab-manual">
+      <div class="card">
+        <div class="card-header"><i class="fas fa-keyboard"></i> Manual Marks Entry</div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Student</label>
+              <select id="manualStudent" class="form-input">
+                <option value="">-- Select Student --</option>
+                {% for s in students %}
+                <option value="{{ s.id }}">{{ s.name }} {% if s.roll_number %}({{ s.roll_number }}){% endif %}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Subject</label>
+              <input type="text" id="manualSubject" class="form-input" placeholder="e.g. Math" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Marks Obtained</label>
+              <input type="number" id="manualMarks" class="form-input" placeholder="e.g. 78" min="0" max="100" />
+            </div>
+            <div class="form-group">
+              <label>Max Marks</label>
+              <input type="number" id="manualMaxMarks" class="form-input" value="100" min="0" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Exam Type</label>
+              <select id="manualExamType" class="form-input">
+                <option>Unit Test</option><option>Half Yearly</option>
+                <option>Annual</option><option>Practice Test</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="manualDate" class="form-input" />
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveManualMarks()">
+            <i class="fas fa-save"></i> Save Marks
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENTS TAB -->
+    <div class="tab-panel hidden" id="tab-students">
+      <div class="card">
+        <div class="card-header">
+          <span><i class="fas fa-users"></i> Student List</span>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('addStudentModal2').classList.add('open')">
+            <i class="fas fa-plus"></i> Add
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>#</th><th>Name</th><th>Roll No</th><th>Class</th></tr>
+              </thead>
+              <tbody id="studentListBody">
+                {% for s in students %}
+                <tr>
+                  <td>{{ loop.index }}</td>
+                  <td>{{ s.name }}</td>
+                  <td>{{ s.roll_number or "—" }}</td>
+                  <td>{{ s.class_name or "—" }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="empty-row">No students found. Import via Excel or add manually.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── MARKS REPORT ── -->
+  <section class="section" id="reportSection">
+    <div class="section-header">
+      <h2><i class="fas fa-chart-bar"></i> Marks Report</h2>
+      <div class="report-actions">
+        <button class="btn btn-ghost btn-sm" onclick="loadReport()"><i class="fas fa-sync"></i> Refresh</button>
+        <a href="/api/marks/export" class="btn btn-success btn-sm"><i class="fas fa-file-excel"></i> Export Excel</a>
+      </div>
+    </div>
+    <div id="reportLoading" class="loader-wrap hidden"><div class="spinner"></div></div>
+    <div id="reportContent">
+      <div class="empty-state">
+        <i class="fas fa-chart-line"></i>
+        <p>Click Refresh to load marks report</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ── ADD STUDENT MODAL 2 ── -->
+<div class="modal" id="addStudentModal2">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-plus"></i> Add Student</h3>
+      <button class="modal-close" onclick="closeModal('addStudentModal2')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Student Name *</label>
+        <input type="text" id="studentName2" class="form-input" placeholder="e.g. Priya Sharma" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Roll Number</label>
+          <input type="text" id="studentRoll2" class="form-input" placeholder="e.g. 102" />
+        </div>
+        <div class="form-group">
+          <label>Class</label>
+          <input type="text" id="studentClass2" class="form-input" placeholder="e.g. 9B" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addStudentModal2')">Cancel</button>
+      <button class="btn btn-primary" onclick="addStudent2()"><i class="fas fa-plus"></i> Add</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TAB SWITCHING
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => { p.classList.add('hidden'); p.classList.remove('active'); });
+  event.currentTarget.classList.add('active');
+  document.getElementById('tab-' + tab).classList.remove('hidden');
+  document.getElementById('tab-' + tab).classList.add('active');
+}
+
+// ── FILE PREVIEW
+function previewFile(input, previewId) {
+  const preview = document.getElementById(previewId);
+  if (input.files[0]) {
+    preview.textContent = '📎 ' + input.files[0].name;
+    preview.classList.remove('hidden');
+  }
+}
+
+function handleDrop(e, inputId) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const input = document.getElementById(inputId);
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  }
+}
+
+function previewOCRImage(input) {
+  if (input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('ocrPreviewImg').src = e.target.result;
+      document.getElementById('ocrPreview').classList.remove('hidden');
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+// ── API CALLS
+async function uploadStudents() {
+  const file = document.getElementById('studentFile').files[0];
+  if (!file) { showToast('Select an Excel file first', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  showLoader('Importing students...');
+  const res = await fetch('/api/upload-students', { method: 'POST', body: fd });
+  const data = await res.json();
+  hideLoader();
+  if (data.success) { showToast(data.message, 'success'); setTimeout(() => location.reload(), 1200); }
+  else showToast(data.error, 'error');
+}
+
+async function uploadMarks() {
+  const file = document.getElementById('marksFile').files[0];
+  const subject = document.getElementById('marksSubject').value.trim();
+  if (!file) { showToast('Select an Excel file', 'error'); return; }
+  if (!subject) { showToast('Enter subject name', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('subject', subject);
+  showLoader('Processing marks...');
+  const res = await fetch('/api/marks/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  hideLoader();
+  if (data.success) showToast(`${data.matched} marks saved. Errors: ${data.errors.length}`, 'success');
+  else showToast(data.error, 'error');
+}
+
+async function uploadOCR() {
+  const file = document.getElementById('ocrFile').files[0];
+  const subject = document.getElementById('ocrSubject').value.trim() || 'General';
+  if (!file) { showToast('Select an image first', 'error'); return; }
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('subject', subject);
+  showLoader('Running OCR...');
+  const res = await fetch('/api/marks/upload', { method: 'POST', body: fd });
+  const data = await res.json();
+  hideLoader();
+  if (data.success) showToast(data.message || 'OCR complete!', 'success');
+  else showToast(data.error || 'OCR failed', 'error');
+}
+
+async function saveManualMarks() {
+  const student_id = document.getElementById('manualStudent').value;
+  const subject = document.getElementById('manualSubject').value.trim();
+  const marks = document.getElementById('manualMarks').value;
+  const max = document.getElementById('manualMaxMarks').value || 100;
+  if (!student_id) { showToast('Select a student', 'error'); return; }
+  if (!subject) { showToast('Enter subject', 'error'); return; }
+  if (!marks) { showToast('Enter marks', 'error'); return; }
+  const res = await fetch('/api/marks', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ student_id: parseInt(student_id), subject, marks_obtained: parseFloat(marks), max_marks: parseFloat(max), exam_type: document.getElementById('manualExamType').value })
+  });
+  const data = await res.json();
+  if (data.success) { showToast('Marks saved!', 'success'); loadReport(); }
+  else showToast(data.error, 'error');
+}
+
+async function submitVoiceMarks() {
+  const text = document.getElementById('voiceText').value.trim();
+  const subject = document.getElementById('voiceSubject').value.trim() || 'General';
+  if (!text) { showToast('No voice text to process', 'error'); return; }
+  const res = await fetch('/api/marks/voice', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, subject })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(data.message, 'success');
+    if (data.unmatched.length > 0) showToast('Unmatched: ' + data.unmatched.join(', '), 'warn');
+    loadReport();
+  } else showToast(data.error, 'error');
+}
+
+async function loadReport() {
+  document.getElementById('reportLoading').classList.remove('hidden');
+  document.getElementById('reportContent').innerHTML = '';
+  const res = await fetch('/api/marks/report');
+  const data = await res.json();
+  document.getElementById('reportLoading').classList.add('hidden');
+  if (!data.length) {
+    document.getElementById('reportContent').innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><p>No marks data yet</p></div>';
+    return;
+  }
+  const subjects = [...new Set(data.flatMap(s => Object.keys(s.subjects)))];
+  let html = `<div class="table-wrap"><table class="data-table"><thead><tr>
+    <th>Name</th><th>Roll</th><th>Class</th>
+    ${subjects.map(s => `<th>${s}</th>`).join('')}
+    <th>Total</th><th>%</th><th>Grade</th>
+  </tr></thead><tbody>`;
+  data.forEach(s => {
+    html += `<tr>
+      <td><strong>${s.name}</strong></td>
+      <td>${s.roll || '—'}</td><td>${s.class || '—'}</td>
+      ${subjects.map(sub => s.subjects[sub] ? `<td>${s.subjects[sub].marks}/${s.subjects[sub].max}<br><small>${s.subjects[sub].grade}</small></td>` : '<td>—</td>').join('')}
+      <td>${s.total}/${s.max_total}</td>
+      <td><strong>${s.overall_percentage || '—'}%</strong></td>
+      <td><span class="grade-badge ${getGradeClass(s.overall_grade)}">${s.overall_grade || '—'}</span></td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+function getGradeClass(g) {
+  if (!g) return '';
+  if (g.startsWith('A')) return 'grade-a';
+  if (g.startsWith('B')) return 'grade-b';
+  if (g.startsWith('C')) return 'grade-c';
+  return 'grade-f';
+}
+
+async function addStudent2() {
+  const name = document.getElementById('studentName2').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const res = await fetch('/api/students', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, roll_number: document.getElementById('studentRoll2').value, class_name: document.getElementById('studentClass2').value })
+  });
+  const data = await res.json();
+  if (data.success) { showToast('Student added!', 'success'); closeModal('addStudentModal2'); setTimeout(() => location.reload(), 1000); }
+  else showToast(data.error, 'error');
+}
+
+// ── VOICE RECORDING
+let recognition = null;
+let isRecording = false;
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    showToast('Voice not supported in this browser. Use Chrome.', 'error'); return;
+  }
+  if (isRecording) stopVoice();
+  else startVoice();
+}
+function startVoice() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true; recognition.interimResults = true;
+  recognition.lang = 'en-IN';
+  recognition.onresult = e => {
+    let final = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript + ' ';
+    }
+    if (final) document.getElementById('voiceText').value += final;
+  };
+  recognition.onerror = () => stopVoice();
+  recognition.start();
+  isRecording = true;
+  document.getElementById('voiceBtn').classList.add('recording');
+  document.getElementById('voiceBtnIcon').className = 'fas fa-stop';
+  document.getElementById('voiceStatus').textContent = 'Recording... Speak now';
+  document.getElementById('voiceRings').classList.remove('hidden');
+}
+function stopVoice() {
+  if (recognition) recognition.stop();
+  isRecording = false;
+  document.getElementById('voiceBtn').classList.remove('recording');
+  document.getElementById('voiceBtnIcon').className = 'fas fa-microphone';
+  document.getElementById('voiceStatus').textContent = 'Recording stopped. Review and save.';
+  document.getElementById('voiceRings').classList.add('hidden');
+}
+
+// Set today's date
+document.getElementById('manualDate').value = new Date().toISOString().split('T')[0];
+</script>
+{% endblock %}

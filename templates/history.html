@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}History{% endblock %}
+{% block page_title %}History{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="section-header">
+    <h2><i class="fas fa-history"></i> Generated Files</h2>
+    <span class="badge">{{ files|length }} files</span>
+  </div>
+
+  {% if files %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>File Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Generated On</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for file in files %}
+        <tr id="row-{{ file.id }}">
+          <td>{{ loop.index }}</td>
+          <td>
+            <div class="file-name-cell">
+              <i class="fas
+                {% if 'Excel' in file.file_type %}fa-file-excel green
+                {% elif 'PDF' in file.file_type %}fa-file-pdf red
+                {% else %}fa-file-word blue
+                {% endif %} file-icon"></i>
+              {{ file.file_name }}
+            </div>
+          </td>
+          <td><span class="badge">{{ file.file_type }}</span></td>
+          <td>{{ file.description or "—" }}</td>
+          <td>
+            <span title="{{ file.created_at }}">
+              {{ file.created_at[:16].replace('T', ' ') }}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn-icon green" title="Download">
+                <i class="fas fa-download"></i>
+              </a>
+              <button class="btn-icon red" title="Delete" onclick="deleteFile({{ file.id }})">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i class="fas fa-folder-open"></i>
+    <p>No files generated yet.</p>
+    <div class="empty-actions">
+      <a href="{{ url_for('marks_page') }}" class="btn btn-primary">
+        <i class="fas fa-upload"></i> Upload Marks
+      </a>
+      <a href="{{ url_for('paper_generator') }}" class="btn btn-ghost">
+        <i class="fas fa-file-alt"></i> Generate Paper
+      </a>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<script>
+async function deleteFile(id) {
+  if (!confirm('Delete this file? This cannot be undone.')) return;
+  const res = await fetch(`/api/history/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.success) {
+    document.getElementById(`row-${id}`).remove();
+    showToast('File deleted', 'success');
+  }
+}
+</script>
+{% endblock %}

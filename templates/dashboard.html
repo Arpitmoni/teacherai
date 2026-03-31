@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-grid">
+
+  <!-- ── STAT CARDS ── -->
+  <div class="stats-row">
+    <div class="stat-card" data-color="blue">
+      <div class="stat-icon"><i class="fas fa-users"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-target="{{ student_count }}">{{ student_count }}</div>
+        <div class="stat-label">Total Students</div>
+      </div>
+      <div class="stat-bg-icon"><i class="fas fa-users"></i></div>
+    </div>
+    <div class="stat-card" data-color="green">
+      <div class="stat-icon"><i class="fas fa-star"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-target="{{ marks_count }}">{{ marks_count }}</div>
+        <div class="stat-label">Marks Entries</div>
+      </div>
+      <div class="stat-bg-icon"><i class="fas fa-star"></i></div>
+    </div>
+    <div class="stat-card" data-color="purple">
+      <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-target="{{ paper_count }}">{{ paper_count }}</div>
+        <div class="stat-label">Papers Generated</div>
+      </div>
+      <div class="stat-bg-icon"><i class="fas fa-file-alt"></i></div>
+    </div>
+    <div class="stat-card" data-color="orange">
+      <div class="stat-icon"><i class="fas fa-download"></i></div>
+      <div class="stat-info">
+        <div class="stat-value" data-target="{{ history_count }}">{{ history_count }}</div>
+        <div class="stat-label">Files Generated</div>
+      </div>
+      <div class="stat-bg-icon"><i class="fas fa-download"></i></div>
+    </div>
+  </div>
+
+  <!-- ── QUICK ACTIONS ── -->
+  <section class="section">
+    <div class="section-header">
+      <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
+    </div>
+    <div class="quick-actions-grid">
+      <a href="{{ url_for('marks_page') }}" class="quick-action-card">
+        <div class="qa-icon" style="--qa-color: #4f8ef7;">
+          <i class="fas fa-upload"></i>
+        </div>
+        <div class="qa-text">
+          <strong>Upload Marks</strong>
+          <span>Excel / Image / Voice</span>
+        </div>
+        <i class="fas fa-arrow-right qa-arrow"></i>
+      </a>
+      <a href="{{ url_for('paper_generator') }}" class="quick-action-card">
+        <div class="qa-icon" style="--qa-color: #22c55e;">
+          <i class="fas fa-magic"></i>
+        </div>
+        <div class="qa-text">
+          <strong>Generate Paper</strong>
+          <span>AI-powered question paper</span>
+        </div>
+        <i class="fas fa-arrow-right qa-arrow"></i>
+      </a>
+      <button class="quick-action-card" onclick="openAddStudentModal()">
+        <div class="qa-icon" style="--qa-color: #a855f7;">
+          <i class="fas fa-user-plus"></i>
+        </div>
+        <div class="qa-text">
+          <strong>Add Student</strong>
+          <span>Manual student entry</span>
+        </div>
+        <i class="fas fa-arrow-right qa-arrow"></i>
+      </button>
+      <a href="{{ url_for('history_page') }}" class="quick-action-card">
+        <div class="qa-icon" style="--qa-color: #f97316;">
+          <i class="fas fa-history"></i>
+        </div>
+        <div class="qa-text">
+          <strong>View History</strong>
+          <span>Download past files</span>
+        </div>
+        <i class="fas fa-arrow-right qa-arrow"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- ── RECENT FILES ── -->
+  <section class="section">
+    <div class="section-header">
+      <h2><i class="fas fa-clock"></i> Recent Files</h2>
+      <a href="{{ url_for('history_page') }}" class="btn-link">View All</a>
+    </div>
+    {% if recent_history %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr><th>File Name</th><th>Type</th><th>Description</th><th>Date</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for file in recent_history %}
+          <tr>
+            <td>
+              <div class="file-name-cell">
+                <i class="fas {% if 'Excel' in file.file_type %}fa-file-excel{% elif 'PDF' in file.file_type %}fa-file-pdf{% else %}fa-file-word{% endif %} file-icon {% if 'Excel' in file.file_type %}green{% elif 'PDF' in file.file_type %}red{% else %}blue{% endif %}"></i>
+                {{ file.file_name }}
+              </div>
+            </td>
+            <td><span class="badge">{{ file.file_type }}</span></td>
+            <td>{{ file.description or "—" }}</td>
+            <td>{{ file.created_at[:10] }}</td>
+            <td>
+              <a href="{{ url_for('download_file', file_id=file.id) }}" class="btn-icon" title="Download">
+                <i class="fas fa-download"></i>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fas fa-folder-open"></i>
+      <p>No files generated yet. Start by uploading marks or generating a question paper.</p>
+    </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<!-- ── ADD STUDENT MODAL ── -->
+<div class="modal" id="addStudentModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3><i class="fas fa-user-plus"></i> Add Student</h3>
+      <button class="modal-close" onclick="closeModal('addStudentModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Student Name *</label>
+        <input type="text" id="studentName" class="form-input" placeholder="e.g. Rahul Kumar" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Roll Number</label>
+          <input type="text" id="studentRoll" class="form-input" placeholder="e.g. 101" />
+        </div>
+        <div class="form-group">
+          <label>Class</label>
+          <input type="text" id="studentClass" class="form-input" placeholder="e.g. 10A" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('addStudentModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="addStudent()">
+        <i class="fas fa-plus"></i> Add Student
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function openAddStudentModal() {
+  document.getElementById('addStudentModal').classList.add('open');
+}
+async function addStudent() {
+  const name = document.getElementById('studentName').value.trim();
+  if (!name) { showToast('Name is required', 'error'); return; }
+  const res = await fetch('/api/students', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name,
+      roll_number: document.getElementById('studentRoll').value,
+      class_name: document.getElementById('studentClass').value
+    })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Student added!', 'success');
+    closeModal('addStudentModal');
+    setTimeout(() => location.reload(), 1000);
+  } else {
+    showToast(data.error, 'error');
+  }
+}
+</script>
+{% endblock %}
